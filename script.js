@@ -681,3 +681,248 @@ const additionalStyles = `
 `;
 
 document.head.insertAdjacentHTML('beforeend', additionalStyles);
+
+// Store location data
+const locationData = {
+    'ikeja': {
+        name: 'Ikeja Branch',
+        address: '123 Ikeja Way, Lagos State',
+        phone: '+2348123456001'
+    },
+    'victoria-island': {
+        name: 'Victoria Island Branch',
+        address: '456 Victoria Island, Lagos State',
+        phone: '+2348123456002'
+    },
+    'surulere': {
+        name: 'Surulere Branch',
+        address: '789 Surulere Road, Lagos State',
+        phone: '+2348123456003'
+    },
+    'lekki': {
+        name: 'Lekki Branch',
+        address: '321 Lekki Phase 1, Lagos State',
+        phone: '+2348123456004'
+    },
+    'ajah': {
+        name: 'Ajah Branch',
+        address: '654 Ajah Express, Lagos State',
+        phone: '+2348123456005'
+    },
+    'yaba': {
+        name: 'Yaba Branch',
+        address: '987 Yaba College Road, Lagos State',
+        phone: '+2348123456006'
+    }
+};
+
+// Show checkout form
+function showCheckoutForm() {
+    if (!selectedLocation) {
+        showNotification('Please select a location first', 'error');
+        return;
+    }
+    
+    if (cart.length === 0) {
+        showNotification('Your cart is empty', 'error');
+        return;
+    }
+    
+    const checkoutModal = document.getElementById('checkoutModal');
+    checkoutModal.classList.add('active');
+    
+    // Update delivery/pickup sections
+    updateCheckoutSections();
+    
+    // Populate order summary
+    updateCheckoutOrderSummary();
+    
+    // Setup form submission
+    const checkoutForm = document.getElementById('checkoutForm');
+    checkoutForm.onsubmit = handleCheckoutSubmission;
+}
+
+function closeCheckoutForm() {
+    const checkoutModal = document.getElementById('checkoutModal');
+    checkoutModal.classList.remove('active');
+    
+    // Reset form
+    document.getElementById('checkoutForm').reset();
+}
+
+function updateCheckoutSections() {
+    const deliverySection = document.getElementById('deliverySection');
+    const pickupSection = document.getElementById('pickupSection');
+    const deliveryAddress = document.getElementById('deliveryAddress');
+    
+    if (isDeliveryMode) {
+        deliverySection.style.display = 'block';
+        pickupSection.style.display = 'none';
+        deliveryAddress.required = true;
+    } else {
+        deliverySection.style.display = 'none';
+        pickupSection.style.display = 'block';
+        deliveryAddress.required = false;
+        
+        // Update pickup location info
+        const locationInfo = locationData[selectedLocation];
+        document.getElementById('pickupLocationName').textContent = locationInfo.name;
+        document.getElementById('pickupLocationAddress').textContent = locationInfo.address;
+    }
+}
+
+function updateCheckoutOrderSummary() {
+    const summaryContainer = document.getElementById('checkoutOrderSummary');
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const currentDeliveryFee = isDeliveryMode && subtotal < freeDeliveryThreshold ? deliveryFee : 0;
+    const total = subtotal + currentDeliveryFee;
+    
+    summaryContainer.innerHTML = `
+        <div class="order-items">
+            ${cart.map(item => `
+                <div class="order-item">
+                    <span>${item.quantity}x ${item.name}</span>
+                    <span>₦${(item.price * item.quantity).toLocaleString()}</span>
+                </div>
+            `).join('')}
+        </div>
+        <div class="order-totals">
+            <div class="total-row">
+                <span>Subtotal:</span>
+                <span>₦${subtotal.toLocaleString()}</span>
+            </div>
+            <div class="total-row">
+                <span>${isDeliveryMode ? 'Delivery Fee:' : 'Pickup:'}</span>
+                <span>${isDeliveryMode ? '₦' + currentDeliveryFee.toLocaleString() : 'FREE'}</span>
+            </div>
+            <div class="total-row final-total">
+                <span><strong>Total:</strong></span>
+                <span><strong>₦${total.toLocaleString()}</strong></span>
+            </div>
+        </div>
+    `;
+}
+
+function handleCheckoutSubmission(event) {
+    event.preventDefault();
+    
+    const customerName = document.getElementById('customerName').value;
+    const customerPhone = document.getElementById('customerPhone').value;
+    const customerEmail = document.getElementById('customerEmail').value;
+    
+    let orderMessage = `Hello! I'd like to place an order:\n\n`;
+    orderMessage += `*Customer Information:*\n`;
+    orderMessage += `Name: ${customerName}\n`;
+    orderMessage += `Phone: ${customerPhone}\n`;
+    if (customerEmail) orderMessage += `Email: ${customerEmail}\n`;
+    
+    if (isDeliveryMode) {
+        const deliveryAddress = document.getElementById('deliveryAddress').value;
+        const deliveryInstructions = document.getElementById('deliveryInstructions').value;
+        
+        orderMessage += `\n*Delivery Details:*\n`;
+        orderMessage += `Address: ${deliveryAddress}\n`;
+        if (deliveryInstructions) orderMessage += `Instructions: ${deliveryInstructions}\n`;
+    } else {
+        const pickupTime = document.getElementById('pickupTime').value;
+        const locationInfo = locationData[selectedLocation];
+        
+        orderMessage += `\n*Pickup Details:*\n`;
+        orderMessage += `Location: ${locationInfo.name}\n`;
+        orderMessage += `Address: ${locationInfo.address}\n`;
+        if (pickupTime) orderMessage += `Preferred Time: ${pickupTime}\n`;
+    }
+    
+    // Add order items
+    orderMessage += `\n*Order Items:*\n`;
+    cart.forEach(item => {
+        orderMessage += `• ${item.name} - ${item.quantity} ${item.unit}${item.quantity !== 1 ? 's' : ''} @ ₦${item.price.toLocaleString()} each\n`;
+    });
+    
+    // Add totals
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const currentDeliveryFee = isDeliveryMode && subtotal < freeDeliveryThreshold ? deliveryFee : 0;
+    const total = subtotal + currentDeliveryFee;
+    
+    orderMessage += `\n*Order Summary:*\n`;
+    orderMessage += `Subtotal: ₦${subtotal.toLocaleString()}\n`;
+    orderMessage += `${isDeliveryMode ? 'Delivery Fee' : 'Pickup'}: ${isDeliveryMode ? '₦' + currentDeliveryFee.toLocaleString() : 'FREE'}\n`;
+    orderMessage += `*Total: ₦${total.toLocaleString()}*\n\n`;
+    orderMessage += `Order Date: ${new Date().toLocaleDateString()}\n`;
+    orderMessage += `Please confirm availability and processing time. Thank you!`;
+    
+    // Get WhatsApp number for selected location
+    const locationInfo = locationData[selectedLocation];
+    const whatsappNumber = locationInfo.phone.replace('+', '');
+    
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(orderMessage)}`;
+    window.open(whatsappUrl, '_blank');
+    
+    // Clear cart and close modals
+    cart = [];
+    updateCartDisplay();
+    displayProducts();
+    closeCheckoutForm();
+    toggleCart();
+    showNotification('Order sent via WhatsApp!', 'success');
+}
+
+// Update delivery toggle to refresh checkout form
+const originalHandleDeliveryToggle = handleDeliveryToggle;
+handleDeliveryToggle = function(event) {
+    originalHandleDeliveryToggle(event);
+    
+    // Update checkout form if it's open
+    if (document.getElementById('checkoutModal').classList.contains('active')) {
+        updateCheckoutSections();
+        updateCheckoutOrderSummary();
+    }
+};
+
+// Data synchronization functions
+function syncDataWithAdmin() {
+    // Check for admin data updates every 5 seconds
+    setInterval(() => {
+        const adminData = localStorage.getItem('freshmart_admin_data');
+        if (adminData) {
+            try {
+                const data = JSON.parse(adminData);
+                if (data.products && data.lastSaved) {
+                    const lastSync = localStorage.getItem('freshmart_last_sync');
+                    if (!lastSync || new Date(data.lastSaved) > new Date(lastSync)) {
+                        // Update products with admin changes
+                        products = [...data.products];
+                        displayProducts();
+                        localStorage.setItem('freshmart_last_sync', data.lastSaved);
+                        showNotification('Product data updated', 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('Error syncing data:', error);
+            }
+        }
+    }, 5000);
+}
+
+// Initialize data sync on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing initialization code ...
+    syncDataWithAdmin();
+});
+
+// Function to manually refresh data
+function refreshProductData() {
+    const adminData = localStorage.getItem('freshmart_admin_data');
+    if (adminData) {
+        try {
+            const data = JSON.parse(adminData);
+            if (data.products) {
+                products = [...data.products];
+                displayProducts();
+                showNotification('Product data refreshed', 'success');
+            }
+        } catch (error) {
+            showNotification('Error refreshing data', 'error');
+        }
+    }
+}
