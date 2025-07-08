@@ -1866,4 +1866,266 @@ window.addEventListener('beforeunload', function() {
     }
 });
 
+// Mobile-specific enhancements
+function initializeMobileFeatures() {
+    // Detect mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // Add mobile class to body
+        document.body.classList.add('mobile-device');
+        
+        // Initialize mobile-specific features
+        setupMobileGestures();
+        setupMobileOptimizations();
+        setupMobileCart();
+        setupMobileKeyboard();
+    }
+}
+
+// Mobile gesture support
+function setupMobileGestures() {
+    let startY = 0;
+    let currentY = 0;
+    let isScrolling = false;
+    
+    // Pull to refresh on product grid
+    const productGrid = document.getElementById('productGrid');
+    if (productGrid) {
+        productGrid.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+        
+        productGrid.addEventListener('touchmove', (e) => {
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+            
+            if (diff > 100 && window.scrollY === 0 && !isScrolling) {
+                isScrolling = true;
+                showNotification('Release to refresh products', 'info');
+            }
+        }, { passive: true });
+        
+        productGrid.addEventListener('touchend', () => {
+            if (isScrolling) {
+                refreshProductData();
+                isScrolling = false;
+            }
+        }, { passive: true });
+    }
+    
+    // Swipe to close cart
+    const cartSidebar = document.getElementById('cartSidebar');
+    if (cartSidebar) {
+        let startX = 0;
+        
+        cartSidebar.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        }, { passive: true });
+        
+        cartSidebar.addEventListener('touchmove', (e) => {
+            const currentX = e.touches[0].clientX;
+            const diff = currentX - startX;
+            
+            if (diff > 100) {
+                toggleCart();
+            }
+        }, { passive: true });
+    }
+}
+
+// Mobile-specific optimizations
+function setupMobileOptimizations() {
+    // Optimize scroll performance
+    let ticking = false;
+    
+    function updateScrollPosition() {
+        const scrollY = window.scrollY;
+        
+        // Hide/show header on scroll
+        const header = document.querySelector('.header');
+        if (header) {
+            if (scrollY > 100) {
+                header.classList.add('header-hidden');
+            } else {
+                header.classList.remove('header-hidden');
+            }
+        }
+        
+        // Update quick actions visibility
+        const quickActions = document.getElementById('quickActionsCustomer');
+        if (quickActions) {
+            quickActions.style.display = scrollY > 200 ? 'flex' : 'none';
+        }
+        
+        ticking = false;
+    }
+    
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            requestAnimationFrame(updateScrollPosition);
+            ticking = true;
+        }
+    }, { passive: true });
+    
+    // Optimize touch events
+    document.addEventListener('touchstart', () => {}, { passive: true });
+    document.addEventListener('touchmove', () => {}, { passive: true });
+}
+
+// Enhanced mobile cart experience
+function setupMobileCart() {
+    const cartSidebar = document.getElementById('cartSidebar');
+    const cartOverlay = document.getElementById('cartOverlay');
+    
+    if (cartSidebar && cartOverlay) {
+        // Prevent background scroll when cart is open
+        const originalToggleCart = window.toggleCart;
+        window.toggleCart = function() {
+            const isOpen = cartSidebar.classList.contains('open');
+            
+            if (isOpen) {
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.width = '';
+            } else {
+                const scrollY = window.scrollY;
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.top = `-${scrollY}px`;
+                document.body.style.width = '100%';
+            }
+            
+            originalToggleCart();
+        };
+    }
+}
+
+// Mobile keyboard handling
+function setupMobileKeyboard() {
+    // Handle virtual keyboard appearance
+    const viewport = document.querySelector('meta[name=viewport]');
+    
+    function handleKeyboard() {
+        if (window.visualViewport) {
+            const handleViewportChange = () => {
+                const currentHeight = window.visualViewport.height;
+                const fullHeight = window.screen.height;
+                const keyboardHeight = fullHeight - currentHeight;
+                
+                if (keyboardHeight > 150) {
+                    // Keyboard is open
+                    document.body.classList.add('keyboard-open');
+                    
+                    // Adjust checkout modal if open
+                    const checkoutModal = document.getElementById('checkoutModal');
+                    if (checkoutModal && checkoutModal.classList.contains('active')) {
+                        checkoutModal.style.paddingBottom = `${keyboardHeight}px`;
+                    }
+                } else {
+                    // Keyboard is closed
+                    document.body.classList.remove('keyboard-open');
+                    
+                    const checkoutModal = document.getElementById('checkoutModal');
+                    if (checkoutModal) {
+                        checkoutModal.style.paddingBottom = '';
+                    }
+                }
+            };
+            
+            window.visualViewport.addEventListener('resize', handleViewportChange);
+        }
+    }
+    
+    handleKeyboard();
+}
+
+// Enhanced mobile product card interactions
+function enhanceMobileProductCards() {
+    const productCards = document.querySelectorAll('.product-card');
+    
+    productCards.forEach(card => {
+        // Add touch feedback
+        card.addEventListener('touchstart', () => {
+            card.style.transform = 'scale(0.98)';
+        }, { passive: true });
+        
+        card.addEventListener('touchend', () => {
+            card.style.transform = '';
+        }, { passive: true });
+        
+        // Double tap to add to cart
+        let lastTap = 0;
+        card.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            
+            if (tapLength < 500 && tapLength > 0) {
+                const productId = parseInt(card.dataset.productId);
+                if (productId) {
+                    addToCart(productId);
+                    
+                    // Visual feedback
+                    card.style.animation = 'pulse 0.3s ease';
+                    setTimeout(() => {
+                        card.style.animation = '';
+                    }, 300);
+                }
+            }
+            lastTap = currentTime;
+        });
+    });
+}
+
+// Mobile-specific checkout enhancements
+function enhanceMobileCheckout() {
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        // Auto-scroll to focused input
+        const inputs = checkoutForm.querySelectorAll('input, textarea, select');
+        
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                setTimeout(() => {
+                    input.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }, 300); // Wait for keyboard animation
+            });
+        });
+        
+        // Format phone number input
+        const phoneInput = document.getElementById('customerPhone');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.startsWith('234')) {
+                    value = '+' + value;
+                } else if (value.startsWith('0')) {
+                    value = '+234' + value.substring(1);
+                } else if (!value.startsWith('+')) {
+                    value = '+234' + value;
+                }
+                e.target.value = value;
+            });
+        }
+    }
+}
+
+// Initialize mobile features
+document.addEventListener('DOMContentLoaded', function() {
+    initializeMobileFeatures();
+    
+    // Re-enhance product cards when they're updated
+    const originalDisplayProducts = displayProducts;
+    displayProducts = function() {
+        originalDisplayProducts();
+        enhanceMobileProductCards();
+    };
+    
+    enhanceMobileCheckout();
+});
+
 // End of script.js
