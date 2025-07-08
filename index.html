@@ -482,6 +482,8 @@
     </div>
 
     <script>
+		document.addEventListener('DOMContentLoaded', () => {
+
         // Sample product data with location-specific inventory
         const products = {
             1: {
@@ -783,4 +785,61 @@
             }
 
             const locationName = document.querySelector(`[data-location="${selectedLocation}"]`).querySelector('.location-name').textContent;
-            const total = cart.reduce((sum, item) => sum + (item
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            let message = `🛒 *New Order from ${locationName}*\n\n`;
+            message += `📋 *Order Details:*\n`;
+            
+            cart.forEach(item => {
+                message += `• ${item.name}\n`;
+                message += `  Qty: ${item.quantity} × ₦${item.price.toLocaleString()} = ₦${(item.price * item.quantity).toLocaleString()}\n\n`;
+            });
+            
+            message += `💰 *Total: ₦${total.toLocaleString()}*\n\n`;
+            message += `📍 *Pickup Location: ${locationName}*\n`;
+            message += `🕒 *Order Time: ${new Date().toLocaleString()}*`;
+            
+            const whatsappUrl = `https://wa.me/${selectedPhone}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // Admin controls
+			function renderAdminControls() {
+				if (!selectedLocation) {
+					adminControls.innerHTML = '<p>Please select a location first</p>';
+					return;
+				}
+
+				adminControls.innerHTML = Object.entries(products).map(([id, product]) => {
+					const currentStock = product.inventory[selectedLocation].stock;
+					return `
+						<div class="stock-update">
+							<h4>${product.name}</h4>
+							<p>Current Stock: ${currentStock}</p>
+							<input type="number" class="stock-input" id="stock-input-${id}" value="${currentStock}" min="0">
+							<button class="update-btn" onclick="updateStock(${id})">Update Stock</button>
+						</div>
+					`;
+				}).join('');
+			}
+
+			// Update stock function
+			function updateStock(productId) {
+				const input = document.getElementById(`stock-input-${productId}`);
+				const newStock = parseInt(input.value);
+
+				if (isNaN(newStock) || newStock < 0) {
+					alert('Please enter a valid stock quantity.');
+					return;
+				}
+
+				products[productId].inventory[selectedLocation].stock = newStock;
+
+				// Re-render both product grid and admin controls to reflect updates
+				renderProducts();
+				renderAdminControls();
+			}
+        }); // Close DOMContentLoaded listener
+    </script>
+</body>
+</html>
