@@ -1089,3 +1089,63 @@ function generateSalesReportHTML() {
         </table>
     `;
 }
+
+// Enhanced auto-save with frontend notification
+function enableAutoSave() {
+    autoSaveInterval = setInterval(() => {
+        const adminData = {
+            products: adminProducts,
+            orders: adminOrders,
+            locations: adminLocations,
+            lastSaved: new Date().toISOString()
+        };
+        
+        localStorage.setItem('freshmart_admin_data', JSON.stringify(adminData));
+        
+        // Trigger frontend update notification
+        localStorage.setItem('freshmart_data_updated', 'true');
+    }, 30000); // Auto-save every 30 seconds
+}
+
+// Immediate save function for critical updates
+function saveDataImmediately() {
+    const adminData = {
+        products: adminProducts,
+        orders: adminOrders,
+        locations: adminLocations,
+        lastSaved: new Date().toISOString()
+    };
+    
+    localStorage.setItem('freshmart_admin_data', JSON.stringify(adminData));
+    localStorage.setItem('freshmart_data_updated', 'true');
+}
+
+// Update all functions that modify data to trigger immediate save
+const originalHandleAddProduct = handleAddProduct;
+handleAddProduct = function(event) {
+    originalHandleAddProduct(event);
+    saveDataImmediately();
+};
+
+const originalHandleUpdateProduct = handleUpdateProduct;
+handleUpdateProduct = function(event, productId) {
+    originalHandleUpdateProduct(event, productId);
+    saveDataImmediately();
+};
+
+const originalDeleteProduct = deleteProduct;
+deleteProduct = function(productId) {
+    originalDeleteProduct(productId);
+    saveDataImmediately();
+};
+
+// Update stock changes to trigger immediate save
+function updateProductStock(productId, location, newStock) {
+    const product = adminProducts.find(p => p.id === productId);
+    if (product) {
+        product.stock[location] = Math.max(0, newStock);
+        loadInventoryTable();
+        saveDataImmediately();
+        showNotification(`Stock updated for ${product.name}`, 'success');
+    }
+}
