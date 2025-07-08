@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMart Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-header">
+                <i class="fas fa-shield-alt"></i>
+                <h2>Admin Login</h2>
+            </div>
+            <form id="loginForm">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Username" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard" style="display: none;">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-nav">
+                <div class="logo">
+                    <i class="fas fa-cogs"></i>
+                    <span>FreshMart Admin</span>
+                </div>
+                <div class="admin-controls">
+                    <span class="admin-user">Welcome, Admin</span>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <nav class="admin-menu">
+                    <a href="#dashboard" class="menu-item active" onclick="showSection('dashboard')">
+                        <i class="fas fa-chart-dashboard"></i>
+                        Dashboard
+                    </a>
+                    <a href="#inventory" class="menu-item" onclick="showSection('inventory')">
+                        <i class="fas fa-boxes"></i>
+                        Inventory Management
+                    </a>
+                    <a href="#orders" class="menu-item" onclick="showSection('orders')">
+                        <i class="fas fa-shopping-cart"></i>
+                        Orders
+                    </a>
+                    <a href="#locations" class="menu-item" onclick="showSection('locations')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Locations
+                    </a>
+                    <a href="#settings" class="menu-item" onclick="showSection('settings')">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </nav>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="admin-content">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="admin-section active">
+                    <div class="section-header">
+                        <h2>Dashboard Overview</h2>
+                        <div class="date-filter">
+                            <input type="date" id="dateFrom">
+                            <input type="date" id="dateTo">
+                            <button class="btn-primary">Filter</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalOrders">0</h3>
+                                <p>Total Orders</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-naira-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalRevenue">₦0</h3>
+                                <p>Total Revenue</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="lowStockItems">0</h3>
+                                <p>Low Stock Items</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>6</h3>
+                                <p>Active Locations</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Sales by Location</h3>
+                            <div class="chart-placeholder">
+                                <canvas id="locationChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Top Products</h3>
+                            <div class="top-products" id="topProducts">
+                                <!-- Top products will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inventory Section -->
+                <section id="inventory" class="admin-section">
+                    <div class="section-header">
+                        <h2>Inventory Management</h2>
+                        <div class="section-controls">
+                            <select id="locationFilter">
+                                <option value="">All Locations</option>
+                                <option value="ikeja">Ikeja Branch</option>
+                                <option value="victoria-island">Victoria Island Branch</option>
+                                <option value="surulere">Surulere Branch</option>
+                                <option value="lekki">Lekki Branch</option>
+                                <option value="ajah">Ajah Branch</option>
+                                <option value="yaba">Yaba Branch</option>
+                            </select>
+                            <button class="btn-primary" onclick="showAddProductModal()">
+                                <i class="fas fa-plus"></i>
+                                Add Product
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="inventory-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th>Stock by Location</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody">
+                                <!-- Inventory items will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Orders Section -->
+                <section id="orders" class="admin-section">
+                    <div class="section-header">
+                        <h2>Order Management</h2>
+                        <div class="section-controls">
+                            <select id="orderStatusFilter">
+                                <option value="">All Orders</option>
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                            <input type="date" id="orderDateFilter">
+                        </div>
+                    </div>
+
+                    <div class="orders-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Location</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <!-- Orders will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Locations Section -->
+                <section id="locations" class="admin-section">
+                    <div class="section-header">
+                        <h2>Location Management</h2>
+                        <button class="btn-primary" onclick="showAddLocationModal()">
+                            <i class="fas fa-plus"></i>
+                            Add Location
+                        </button>
+                    </div>
+
+                    <div class="locations-grid" id="locationsGrid">
+                        <!-- Location cards will be populated here -->
+                    </div>
+                </section>
+
+                <!-- Settings Section -->
+                <section id="settings" class="admin-section">
+                    <div class="section-header">
+                        <h2>System Settings</h2>
+                    </div>
+
+                    <div class="settings-grid">
+                        <div class="settings-card">
+                            <h3>Delivery Settings</h3>
+                            <div class="setting-item">
+                                <label>Base Delivery Fee (₦)</label>
+                                <input type="number" id="baseDeliveryFee" value="1500">
+                            </div>
+                            <div class="setting-item">
+                                <label>Free Delivery Threshold (₦)</label>
+                                <input type="number" id="freeDeliveryThreshold" value="25000">
+                            </div>
+                            <div class="setting-item">
+                                <label>Delivery Radius (km)</label>
+                                <input type="number" id="deliveryRadius" value="15">
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Stock Alerts</h3>
+                            <div class="setting-item">
+                                <label>Low Stock Threshold</label>
+                                <input type="number" id="lowStockThreshold" value="10">
+                            </div>
+                            <div class="setting-item">
+                                <label>Email Notifications</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="emailNotifications" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>WhatsApp Integration</h3>
+                            <div class="setting-item">
+                                <label>Default WhatsApp Number</label>
+                                <input type="tel" id="defaultWhatsApp" value="+2348123456000">
+                            </div>
+                            <div class="setting-item">
+                                <label>Order Message Template</label>
+                                <textarea id="orderTemplate" rows="4">Hello! I'd like to place an order:
+
+                                    {orderDetails}
+                                    
+                                    Total: {total}
+                                    Delivery: {deliveryType}
+                                    Location: {location}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button class="btn-primary" onclick="saveSettings()">
+                            <i class="fas fa-save"></i>
+                            Save Settings
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal" id="addProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Product</h3>
+                <button class="close-modal" onclick="closeModal('addProductModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addProductForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input type="text" id="productName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="productCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="groceries">Groceries</option>
+                            <option value="dairy">Dairy</option>
+                            <option value="meat">Meat & Poultry</option>
+                            <option value="household">Household</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="grills">Grills & Outdoor</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Price (₦)</label>
+                        <input type="number" id="productPrice" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unit</label>
+                        <input type="text" id="productUnit" placeholder="e.g., kg, piece, liter">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="productDescription" rows="3"></textarea>
+                </div>
+
+                <div class="stock-grid">
+                    <h4>Stock by Location</h4>
+                    <div class="location-stock">
+                        <label>Ikeja Branch</label>
+                        <input type="number" id="stock-ikeja" min="0" value="0">
+                    </div>
+                    <div class="location-stock">
+                        <label>Victoria Island Branch</label>
+                        <input type="number" id="stock-victoria-island" min="0" value="0">
+                    </div>
+                    <div class="location-stock">
+                        <label>Surulere Branch</label>
+                        <input type="number" id="stock-surulere" min="0" value="0">
+                    </div>
+                    <div class="location-stock">
+                        <label>Lekki Branch</label>
+                        <input type="number" id="stock-lekki" min="0" value="0">
+                    </div>
+                    <div class="location-stock">
+                        <label>Ajah Branch</label>
+                        <input type="number" id="stock-ajah" min="0" value="0">
+                    </div>
+                    <div class="location-stock">
+                        <label>Yaba Branch</label>
+                        <input type="number" id="stock-yaba" min="0" value="0">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addProductModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modalOverlay"></div>
+
+    <script src="admin-script.js"></script>
+</body>
+</html>
