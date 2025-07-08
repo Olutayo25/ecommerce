@@ -804,41 +804,251 @@
         }
 
         // Admin controls
-			function renderAdminControls() {
-				if (!selectedLocation) {
-					adminControls.innerHTML = '<p>Please select a location first</p>';
-					return;
-				}
-
-				adminControls.innerHTML = Object.entries(products).map(([id, product]) => {
-					const currentStock = product.inventory[selectedLocation].stock;
-					return `
-						<div class="stock-update">
-							<h4>${product.name}</h4>
-							<p>Current Stock: ${currentStock}</p>
-							<input type="number" class="stock-input" id="stock-input-${id}" value="${currentStock}" min="0">
-							<button class="update-btn" onclick="updateStock(${id})">Update Stock</button>
-						</div>
-					`;
-				}).join('');
-			}
-
-			// Update stock function
-			function updateStock(productId) {
-				const input = document.getElementById(`stock-input-${productId}`);
-				const newStock = parseInt(input.value);
-
-				if (isNaN(newStock) || newStock < 0) {
-					alert('Please enter a valid stock quantity.');
-					return;
-				}
-
-				products[productId].inventory[selectedLocation].stock = newStock;
-
-				// Re-render both product grid and admin controls to reflect updates
-				renderProducts();
-				renderAdminControls();
-			}
+		function renderAdminControls() {
+		    if (!selectedLocation) {
+		        adminControls.innerHTML = '<p>Please select a location first</p>';
+		        return;
+		    }
+		
+		    adminControls.innerHTML = Object.entries(products).map(([id, product]) => {
+		        const currentStock = product.inventory[selectedLocation].stock;
+		        return `
+		            <div class="stock-update">
+		                <h4>${product.name}</h4>
+		                <p>Current Stock: ${currentStock}</p>
+		                <input type="number" class="stock-input" id="stock-${id}" min="0" max="1000" placeholder="New stock amount">
+		                <button class="update-btn" onclick="updateStock(${id})">Update Stock</button>
+		            </div>
+		        `;
+		    }).join('');
+		}
+		
+		function updateStock(productId) {
+		    const newStock = parseInt(document.getElementById(`stock-${productId}`).value);
+		    
+		    if (isNaN(newStock) || newStock < 0) {
+		        alert('Please enter a valid stock amount');
+		        return;
+		    }
+		    
+		    products[productId].inventory[selectedLocation].stock = newStock;
+		    renderProducts();
+		    renderAdminControls();
+		    showNotification(`Stock updated for ${products[productId].name}`);
+		}
+		
+		// Notification system
+		function showNotification(message) {
+		    // Remove existing notification if any
+		    const existingNotification = document.querySelector('.notification');
+		    if (existingNotification) {
+		        existingNotification.remove();
+		    }
+		    
+		    // Create new notification
+		    const notification = document.createElement('div');
+		    notification.className = 'notification';
+		    notification.textContent = message;
+		    
+		    document.body.appendChild(notification);
+		    
+		    // Show notification
+		    setTimeout(() => {
+		        notification.classList.add('show');
+		    }, 100);
+		    
+		    // Hide notification after 3 seconds
+		    setTimeout(() => {
+		        notification.classList.remove('show');
+		        setTimeout(() => {
+		            if (notification.parentNode) {
+		                notification.remove();
+		            }
+		        }, 300);
+		    }, 3000);
+		}
+		
+		// Utility functions
+		function formatCurrency(amount) {
+		    return `₦${amount.toLocaleString()}`;
+		}
+		
+		function getLocationName(locationKey) {
+		    const locationCard = document.querySelector(`[data-location="${locationKey}"]`);
+		    return locationCard ? locationCard.querySelector('.location-name').textContent : locationKey;
+		}
+		
+		// Local storage functions for persistence
+		function saveToLocalStorage() {
+		    const data = {
+		        selectedLocation,
+		        selectedPhone,
+		        cart,
+		        quantities,
+		        products
+		    };
+		    localStorage.setItem('supermarketData', JSON.stringify(data));
+		}
+		
+		function loadFromLocalStorage() {
+		    const savedData = localStorage.getItem('supermarketData');
+		    if (savedData) {
+		        const data = JSON.parse(savedData);
+		        
+		        // Only restore cart and quantities, not location selection
+		        cart = data.cart || [];
+		        quantities = data.quantities || {};
+		        
+		        // Update products if they exist in localStorage
+		        if (data.products) {
+		            Object.assign(products, data.products);
+		        }
+		        
+		        updateCartDisplay();
+		    }
+		}
+		
+		// Auto-save functionality
+		function enableAutoSave() {
+		    setInterval(() => {
+		        if (selectedLocation) {
+		            saveToLocalStorage();
+		        }
+		    }, 5000); // Save every 5 seconds
+		}
+		
+		// Search functionality enhancement
+		function highlightSearchTerm(text, searchTerm) {
+		    if (!searchTerm) return text;
+		    
+		    const regex = new RegExp(`(${searchTerm})`, 'gi');
+		    return text.replace(regex, '<mark>$1</mark>');
+		}
+		
+		// Keyboard shortcuts
+		function setupKeyboardShortcuts() {
+		    document.addEventListener('keydown', (e) => {
+		        // Ctrl/Cmd + F to focus search
+		        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+		            e.preventDefault();
+		            searchFilter.focus();
+		        }
+		        
+		        // Escape to clear search
+		        if (e.key === 'Escape') {
+		            searchFilter.value = '';
+		            filterProducts();
+		        }
+		    });
+		}
+		
+		// Enhanced product sorting
+		function sortProducts(products, sortBy = 'name') {
+		    return products.sort(([idA, productA], [idB, productB]) => {
+		        switch (sortBy) {
+		            case 'price-low':
+		                return productA.price - productB.price;
+		            case 'price-high':
+		                return productB.price - productA.price;
+		            case 'stock':
+		                const stockA = productA.inventory[selectedLocation]?.stock || 0;
+		                const stockB = productB.inventory[selectedLocation]?.stock || 0;
+		                return stockB - stockA;
+		            case 'name':
+		            default:
+		                return productA.name.localeCompare(productB.name);
+		        }
+		    });
+		}
+		
+		// Add sort functionality to filters
+		function addSortOption() {
+		    const sortGroup = document.createElement('div');
+		    sortGroup.className = 'filter-group';
+		    sortGroup.innerHTML = `
+		        <label>Sort by:</label>
+		        <select id="sortFilter">
+		            <option value="name">Name (A-Z)</option>
+		            <option value="price-low">Price (Low to High)</option>
+		            <option value="price-high">Price (High to Low)</option>
+		            <option value="stock">Stock Level</option>
+		        </select>
+		    `;
+		    
+		    document.querySelector('.filters').appendChild(sortGroup);
+		    
+		    document.getElementById('sortFilter').addEventListener('change', filterProducts);
+		}
+		
+		// Enhanced filter function with sorting
+		function getFilteredProducts() {
+		    const category = categoryFilter.value;
+		    const availability = availabilityFilter.value;
+		    const search = searchFilter.value.toLowerCase();
+		    const sortBy = document.getElementById('sortFilter')?.value || 'name';
+		
+		    let filtered = Object.entries(products).filter(([id, product]) => {
+		        const inventory = product.inventory[selectedLocation];
+		        const stock = inventory.stock;
+		        
+		        // Category filter
+		        if (category && product.category !== category) return false;
+		        
+		        // Availability filter
+		        if (availability) {
+		            if (availability === 'in-stock' && stock <= 10) return false;
+		            if (availability === 'low-stock' && (stock === 0 || stock > 10)) return false;
+		            if (availability === 'out-of-stock' && stock > 0) return false;
+		        }
+		        
+		        // Search filter
+		        if (search && !product.name.toLowerCase().includes(search)) return false;
+		        
+		        return true;
+		    });
+		    
+		    return sortProducts(filtered, sortBy);
+		}
+		
+		// Analytics and reporting
+		function generateSalesReport() {
+		    const report = {
+		        totalOrders: cart.length,
+		        totalValue: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+		        topProducts: cart.sort((a, b) => b.quantity - a.quantity).slice(0, 3),
+		        location: selectedLocation,
+		        timestamp: new Date().toISOString()
+		    };
+		    
+		    console.log('Sales Report:', report);
+		    return report;
+		}
+		
+		// Initialize application when DOM is loaded
+		document.addEventListener('DOMContentLoaded', () => {
+		    init();
+		    loadFromLocalStorage();
+		    enableAutoSave();
+		    setupKeyboardShortcuts();
+		    addSortOption();
+		    
+		    // Add some sample data to localStorage on first visit
+		    if (!localStorage.getItem('supermarketData')) {
+		        saveToLocalStorage();
+		    }
+		});
+		
+		// Export functions for testing (if needed)
+		if (typeof module !== 'undefined' && module.exports) {
+		    module.exports = {
+		        products,
+		        selectLocation,
+		        addToCart,
+		        removeFromCart,
+		        updateStock,
+		        generateSalesReport
+		    };
+		}
         }); // Close DOMContentLoaded listener
     </script>
 </body>
