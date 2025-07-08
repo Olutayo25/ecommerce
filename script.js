@@ -1082,8 +1082,9 @@ function handleCheckoutSubmission(event) {
     }
     
     // Build order message
-    let orderMessage = `*🛒 New Order from Ikeja Branch*\n\n`;
-    orderMessage = `Hello! I'd like to place an order:\n`;
+    let orderMessage = ``🛒 *New Order from ${locationInfo.name}*\n\n`;
+    orderMessage = `📋 *Order Details:*\n`;
+    
     orderMessage += `*Customer Information:*\n`;
     orderMessage += `Name: ${customerName}\n`;
     orderMessage += `Phone: ${customerPhone}\n`;
@@ -1110,11 +1111,11 @@ function handleCheckoutSubmission(event) {
         orderMessage += `Location: ${locationInfo.name}\n`;
         orderMessage += `📍 Address: ${locationInfo.address}\n`;
         if (pickupTime) orderMessage += `🕒 Preferred Time: ${pickupTime}\n`;
-        if (pickupNotes) orderMessage += `Notes: ${pickupNotes}\n`;
+        if (pickupNotes) orderMessage += `📋 Notes: ${pickupNotes}\n`;
     }
     
     // Add order items
-    orderMessage += `\n*📋 Order Details:*\n`;
+    orderMessage += `\n*📋 Purchased Items:*\n`;
     cart.forEach(item => {
         orderMessage += `• ${item.name} - ${item.quantity} ${item.unit}${item.quantity !== 1 ? 's' : ''} @ ₦${item.price.toLocaleString()} each\n`;
     });
