@@ -1790,4 +1790,80 @@ window.focusLocationSelector = focusLocationSelector;
 
 console.log('🚀 FreshMart Customer App fully loaded and ready!');
 
+// Show admin link only if user has admin access (optional)
+function checkAdminAccess() {
+    // This could check for admin session or other indicators
+    const hasAdminAccess = localStorage.getItem('admin_session');
+    const adminLink = document.getElementById('adminLink');
+    
+    if (adminLink) {
+        adminLink.style.display = hasAdminAccess ? 'flex' : 'none';
+    }
+}
+
+// Call this on page load
+document.addEventListener('DOMContentLoaded', checkAdminAccess);
+
+
+// Enhanced session timeout with security
+function setupSecureSessionTimeout() {
+    let sessionTimeoutId;
+    let warningTimeoutId;
+    
+    function resetSessionTimeout() {
+        clearTimeout(sessionTimeoutId);
+        clearTimeout(warningTimeoutId);
+        
+        if (!currentUser) return;
+        
+        const timeoutMinutes = parseInt(document.getElementById('sessionTimeout')?.value) || 60;
+        const warningMinutes = 5; // Warn 5 minutes before timeout
+        
+        // Show warning before timeout
+        warningTimeoutId = setTimeout(() => {
+            showConfirmation(
+                'Session Expiring',
+                'Your session will expire in 5 minutes. Do you want to continue?',
+                () => {
+                    resetSessionTimeout(); // Reset if user wants to continue
+                },
+                () => {
+                    logout(); // Logout if user doesn't respond
+                }
+            );
+        }, (timeoutMinutes - warningMinutes) * 60 * 1000);
+        
+        // Auto logout
+        sessionTimeoutId = setTimeout(() => {
+            showNotification('Session expired for security reasons', 'warning');
+            logout();
+        }, timeoutMinutes * 60 * 1000);
+    }
+    
+    // Reset timeout on user activity
+    ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+        document.addEventListener(event, resetSessionTimeout, true);
+    });
+    
+    // Initial setup
+    resetSessionTimeout();
+}
+
+// Security: Prevent admin panel access in iframe
+if (window.top !== window.self) {
+    window.top.location = window.self.location;
+}
+
+// Security: Clear sensitive data on page unload
+window.addEventListener('beforeunload', function() {
+    if (currentUser) {
+        // Clear any sensitive data from memory
+        currentUser = null;
+        
+        // Clear forms
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => form.reset());
+    }
+});
+
 // End of script.js
