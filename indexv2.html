@@ -1,0 +1,398 @@
+Absolutely! Let me redesign this as a modern e-commerce website with separate admin functionality, delivery options, and improved UX. I'll create multiple files for better organization.
+
+## 1. Main Customer Interface (index.html)
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMart - Multi-Location Supermarket</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>FreshMart</span>
+                </div>
+                
+                <div class="header-controls">
+                    <div class="location-selector">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <select id="locationSelect">
+                            <option value="">Select Location</option>
+                            <option value="ikeja" data-phone="2348123456001">Ikeja Branch</option>
+                            <option value="victoria-island" data-phone="2348123456002">Victoria Island Branch</option>
+                            <option value="surulere" data-phone="2348123456003">Surulere Branch</option>
+                            <option value="lekki" data-phone="2348123456004">Lekki Branch</option>
+                            <option value="ajah" data-phone="2348123456005">Ajah Branch</option>
+                            <option value="yaba" data-phone="2348123456006">Yaba Branch</option>
+                        </select>
+                    </div>
+                    
+                    <div class="delivery-toggle">
+                        <label class="switch">
+                            <input type="checkbox" id="deliveryToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="delivery-label">Delivery</span>
+                    </div>
+                    
+                    <div class="cart-icon" onclick="toggleCart()">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Fresh Groceries Delivered to Your Door</h1>
+                <p>Shop from multiple locations with real-time inventory and fast delivery</p>
+                <div class="hero-features">
+                    <div class="feature">
+                        <i class="fas fa-truck"></i>
+                        <span>Fast Delivery</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-store"></i>
+                        <span>6 Locations</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-leaf"></i>
+                        <span>Fresh Products</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters Section -->
+    <section class="filters-section">
+        <div class="container">
+            <div class="filters">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchFilter" placeholder="Search products...">
+                </div>
+                
+                <div class="filter-group">
+                    <select id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="groceries">Groceries</option>
+                        <option value="dairy">Dairy</option>
+                        <option value="meat">Meat & Poultry</option>
+                        <option value="household">Household</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="grills">Grills & Outdoor</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <select id="availabilityFilter">
+                        <option value="">All Items</option>
+                        <option value="in-stock">In Stock</option>
+                        <option value="low-stock">Low Stock</option>
+                        <option value="out-of-stock">Out of Stock</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <select id="sortFilter">
+                        <option value="name">Sort by Name</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                        <option value="stock">Stock Level</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="products-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Our Products</h2>
+                <p id="locationStatus">Please select a location to view products</p>
+            </div>
+            
+            <div class="product-grid" id="productGrid">
+                <!-- Products will be populated here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h3><i class="fas fa-shopping-bag"></i> Your Cart</h3>
+            <button class="close-cart" onclick="toggleCart()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="delivery-info" id="deliveryInfo">
+            <div class="delivery-option">
+                <i class="fas fa-store"></i>
+                <span>Pickup - FREE</span>
+            </div>
+        </div>
+        
+        <div class="cart-items" id="cartItems">
+            <div class="empty-cart">
+                <i class="fas fa-shopping-cart"></i>
+                <p>Your cart is empty</p>
+                <small>Add items to get started</small>
+            </div>
+        </div>
+        
+        <div class="cart-summary" id="cartSummary" style="display: none;">
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span id="subtotal">₦0</span>
+            </div>
+            <div class="summary-row">
+                <span>Delivery Fee:</span>
+                <span id="deliveryFee">₦0</span>
+            </div>
+            <div class="summary-row total">
+                <span>Total:</span>
+                <span id="totalAmount">₦0</span>
+            </div>
+            
+            <button class="checkout-btn" id="checkoutBtn">
+                <i class="fab fa-whatsapp"></i>
+                Complete Order via WhatsApp
+            </button>
+        </div>
+    </div>
+
+    <!-- Cart Overlay -->
+    <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>FreshMart</h4>
+                    <p>Your trusted supermarket with multiple locations across Lagos.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#about">About Us</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="#locations">Our Locations</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact Info</h4>
+                    <p><i class="fas fa-phone"></i> +234 812 345 6000</p>
+                    <p><i class="fas fa-envelope"></i> info@freshmart.ng</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 FreshMart. All rights reserved.</p>
+                <a href="admin.html" class="admin-link">Admin Panel</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+```
+
+## 2. Admin Panel (admin.html)
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMart Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-header">
+                <i class="fas fa-shield-alt"></i>
+                <h2>Admin Login</h2>
+            </div>
+            <form id="loginForm">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Username" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard" style="display: none;">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-nav">
+                <div class="logo">
+                    <i class="fas fa-cogs"></i>
+                    <span>FreshMart Admin</span>
+                </div>
+                <div class="admin-controls">
+                    <span class="admin-user">Welcome, Admin</span>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <nav class="admin-menu">
+                    <a href="#dashboard" class="menu-item active" onclick="showSection('dashboard')">
+                        <i class="fas fa-chart-dashboard"></i>
+                        Dashboard
+                    </a>
+                    <a href="#inventory" class="menu-item" onclick="showSection('inventory')">
+                        <i class="fas fa-boxes"></i>
+                        Inventory Management
+                    </a>
+                    <a href="#orders" class="menu-item" onclick="showSection('orders')">
+                        <i class="fas fa-shopping-cart"></i>
+                        Orders
+                    </a>
+                    <a href="#locations" class="menu-item" onclick="showSection('locations')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Locations
+                    </a>
+                    <a href="#settings" class="menu-item" onclick="showSection('settings')">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                </nav>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="admin-content">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="admin-section active">
+                    <div class="section-header">
+                        <h2>Dashboard Overview</h2>
+                        <div class="date-filter">
+                            <input type="date" id="dateFrom">
+                            <input type="date" id="dateTo">
+                            <button class="btn-primary">Filter</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalOrders">0</h3>
+                                <p>Total Orders</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-naira-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalRevenue">₦0</h3>
+                                <p>Total Revenue</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="lowStockItems">0</h3>
+                                <p>Low Stock Items</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>6</h3>
+                                <p>Active Locations</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Sales by Location</h3>
+                            <div class="chart-placeholder">
+                                <canvas id="locationChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Top Products</h3>
+                            <div class="top-products" id="topProducts">
+                                <!-- Top products will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inventory Section -->
+                <section id="inventory" class="admin-section">
+                    <div class="section-header">
+                        <h2>Inventory Management</h2>
+                        <div class="section-controls">
+                            <select id="locationFilter">
+                                <option value="">All Locations</option>
+                                <option value="ikeja">Ikeja Branch</option>
+                                <option value="victoria-island">Victoria Island Branch</option>
+                                <option value="surulere">Surulere Branch</option>
+                                <option value="lekki">Lekki Branch</option>
+                                <option value="ajah">Ajah Branch</option>
+                                <option value="yaba">Yaba Branch</option>
+                            </select>
+                            <button class="btn-primary" onclick="showAddProductModal()">
+                                <i class="fas fa-plus"></i>
+                                Add Product
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="inventory-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    
