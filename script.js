@@ -1082,7 +1082,8 @@ function handleCheckoutSubmission(event) {
     }
     
     // Build order message
-    let orderMessage = `Hello! I'd like to place an order:\n\n`;
+    let orderMessage = `*🛒 New Order from Ikeja Branch*\n\n`;
+    orderMessage = `Hello! I'd like to place an order:\n`;
     orderMessage += `*Customer Information:*\n`;
     orderMessage += `Name: ${customerName}\n`;
     orderMessage += `Phone: ${customerPhone}\n`;
@@ -1097,23 +1098,23 @@ function handleCheckoutSubmission(event) {
             return;
         }
         
-        orderMessage += `\n*Delivery Details:*\n`;
-        orderMessage += `Address: ${deliveryAddress}\n`;
-        if (deliveryInstructions) orderMessage += `Instructions: ${deliveryInstructions}\n`;
+        orderMessage += `\n*📋 Delivery Details:*\n`;
+        orderMessage += `📍 Address: ${deliveryAddress}\n`;
+        if (deliveryInstructions) orderMessage += `📋 Instructions: ${deliveryInstructions}\n`;
     } else {
         const pickupTime = document.getElementById('pickupTime')?.value;
         const pickupNotes = document.getElementById('pickupNotes')?.value;
         const locationInfo = locationData[selectedLocation];
         
-        orderMessage += `\n*Pickup Details:*\n`;
+        orderMessage += `\n*📋 Pickup Details:*\n`;
         orderMessage += `Location: ${locationInfo.name}\n`;
-        orderMessage += `Address: ${locationInfo.address}\n`;
-        if (pickupTime) orderMessage += `Preferred Time: ${pickupTime}\n`;
+        orderMessage += `📍 Address: ${locationInfo.address}\n`;
+        if (pickupTime) orderMessage += `🕒 Preferred Time: ${pickupTime}\n`;
         if (pickupNotes) orderMessage += `Notes: ${pickupNotes}\n`;
     }
     
     // Add order items
-    orderMessage += `\n*Order Items:*\n`;
+    orderMessage += `\n*📋 Order Details:*\n`;
     cart.forEach(item => {
         orderMessage += `• ${item.name} - ${item.quantity} ${item.unit}${item.quantity !== 1 ? 's' : ''} @ ₦${item.price.toLocaleString()} each\n`;
     });
@@ -1126,8 +1127,8 @@ function handleCheckoutSubmission(event) {
     orderMessage += `\n*Order Summary:*\n`;
     orderMessage += `Subtotal: ₦${subtotal.toLocaleString()}\n`;
     orderMessage += `${isDeliveryMode ? 'Delivery Fee' : 'Pickup'}: ${isDeliveryMode ? '₦' + currentDeliveryFee.toLocaleString() : 'FREE'}\n`;
-    orderMessage += `*Total: ₦${total.toLocaleString()}*\n\n`;
-    orderMessage += `Order Date: ${new Date().toLocaleDateString()}\n`;
+    orderMessage += `*💰 Total: ₦${total.toLocaleString()}*\n\n`;
+    orderMessage += `🕒 Order Date: ${new Date().toLocaleDateString()}\n`;
     orderMessage += `Please confirm availability and processing time. Thank you!`;
     
     // Get WhatsApp number for selected location
