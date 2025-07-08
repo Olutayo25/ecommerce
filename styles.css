@@ -1011,3 +1011,38 @@ input:checked + .slider:before {
         margin: 1rem;
     }
 }
+
+.order-items {
+    margin-bottom: 1rem;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f2f6;
+}
+
+.order-item:last-child {
+    border-bottom: none;
+}
+
+.order-totals {
+    border-top: 2px solid #e1e8ed;
+    padding-top: 1rem;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    color: #666;
+}
+
+.total-row.final-total {
+    font-size: 1.1rem;
+    color: #2c3e50;
+    border-top: 1px solid #e1e8ed;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
