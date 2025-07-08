@@ -1238,3 +1238,173 @@ END $$;
 
 RAISE NOTICE 'FreshMart database schema setup completed successfully! 🎉';
     
+
+-- ============================================================================
+-- ADDITIONAL FOR FRONTEND
+-- ============================================================================
+
+-- Wishlists table
+CREATE TABLE IF NOT EXISTS wishlists (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    product_id BIGINT REFERENCES products(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, product_id)
+);
+
+-- Product reviews table
+CREATE TABLE IF NOT EXISTS product_reviews (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    product_id BIGINT REFERENCES products(id) ON DELETE CASCADE,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, product_id)
+);
+
+-- User notifications table
+CREATE TABLE IF NOT EXISTS user_notifications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    type TEXT DEFAULT 'info',
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Performance logs table
+CREATE TABLE IF NOT EXISTS performance_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    metrics JSONB NOT NULL,
+    user_agent TEXT,
+    viewport TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User profiles table (extends auth.users)
+CREATE TABLE IF NOT EXISTS profiles (
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    full_name TEXT,
+    avatar_url TEXT,
+    phone TEXT,
+    address TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_wishlists_user_id ON wishlists(user_id);
+CREATE INDEX IF NOT EXISTS idx_product_reviews_product_id ON product_reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_user_notifications_user_id ON user_notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_notifications_read ON user_notifications(read);
+CREATE INDEX IF NOT EXISTS idx_performance_logs_created_at ON performance_logs(created_at);
+
+-- RLS Policies
+ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own wishlist" ON wishlists
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own reviews" ON product_reviews
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Anyone can read reviews" ON product_reviews
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage own notifications" ON user_notifications
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own profile" ON profiles
+    FOR ALL USING (auth.uid() = id);
+	
+-- Customers table (phone as primary identifier)
+CREATE TABLE IF NOT EXISTS customers (
+    id BIGSERIAL PRIMARY KEY,
+    phone TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    email TEXT,
+    last_order_date TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Customer addresses table
+CREATE TABLE IF NOT EXISTS customer_addresses (
+    id BIGSERIAL PRIMARY KEY,
+    customer_id BIGINT REFERENCES customers(id) ON DELETE CASCADE,
+    address TEXT NOT NULL,
+    label TEXT DEFAULT 'Home',
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Update orders table to reference customers
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id BIGINT REFERENCES customers(id);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+CREATE INDEX IF NOT EXISTS idx_customer_addresses_customer_id ON customer_addresses(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer_phone ON orders(customer_phone);
+CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
+
+-- RPC function to get customer statistics
+CREATE OR REPLACE FUNCTION get_customer_stats(customer_phone TEXT)
+RETURNS TABLE(
+    total_orders BIGINT,
+    total_spent NUMERIC,
+    average_order NUMERIC,
+    last_order_date TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        COUNT(*) as total_orders,
+        COALESCE(SUM(o.total), 0) as total_spent,
+        COALESCE(AVG(o.total), 0) as average_order,
+        MAX(o.created_at) as last_order_date
+    FROM orders o
+    WHERE o.customer_phone = customer_phone;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update customer last_order_date when new order is created
+CREATE OR REPLACE FUNCTION update_customer_last_order()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE customers 
+    SET last_order_date = NEW.created_at,
+        updated_at = NOW()
+    WHERE phone = NEW.customer_phone;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_customer_last_order
+    AFTER INSERT ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_customer_last_order();
+
+-- RLS policies for customer data
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customer_addresses ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access for customer lookup (since we're using phone-based identification)
+CREATE POLICY "Allow public customer lookup" ON customers
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow public customer upsert" ON customers
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow public customer update" ON customers
+    FOR UPDATE USING (true);
+
+CREATE POLICY "Allow public address access" ON customer_addresses
+    FOR ALL USING (true);
+	
+
