@@ -1117,26 +1117,26 @@ FreshMart Limited</textarea>
         </div>
     </div>
 
-    <!-- Quick Actions Floating Button -->
-    <div class="quick-actions" id="quickActions">
-        <button class="quick-action-btn main" onclick="toggleQuickActions()">
-            <i class="fas fa-plus"></i>
+<!-- Quick Actions Floating Button - Only show when logged in -->
+<div class="quick-actions" id="quickActions" style="display: none;">
+    <button class="quick-action-btn main" onclick="toggleQuickActions()" title="Quick Actions">
+        <i class="fas fa-plus"></i>
+    </button>
+    <div class="quick-action-menu" id="quickActionMenu">
+        <button class="quick-action-btn" onclick="showAddProductModal()" title="Add Product">
+            <i class="fas fa-box"></i>
         </button>
-        <div class="quick-action-menu" id="quickActionMenu">
-            <button class="quick-action-btn" onclick="showAddProductModal()" title="Add Product">
-                <i class="fas fa-box"></i>
-            </button>
-            <button class="quick-action-btn" onclick="showAddLocationModal()" title="Add Location">
-                <i class="fas fa-map-marker-alt"></i>
-            </button>
-            <button class="quick-action-btn" onclick="exportData('all')" title="Export Data">
-                <i class="fas fa-download"></i>
-            </button>
-            <button class="quick-action-btn" onclick="generateReport('summary')" title="Generate Report">
-                <i class="fas fa-chart-bar"></i>
-            </button>
-        </div>
+        <button class="quick-action-btn" onclick="showAddLocationModal()" title="Add Location">
+            <i class="fas fa-map-marker-alt"></i>
+        </button>
+        <button class="quick-action-btn" onclick="exportData('all')" title="Export Data">
+            <i class="fas fa-download"></i>
+        </button>
+        <button class="quick-action-btn" onclick="generateReport('summary')" title="Generate Report">
+            <i class="fas fa-chart-bar"></i>
+        </button>
     </div>
+</div>
 
     <!-- Keyboard Shortcuts Help -->
     <div class="shortcuts-help" id="shortcutsHelp" style="display: none;">
