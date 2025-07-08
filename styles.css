@@ -3359,5 +3359,23 @@ input:checked + .slider:before {
     }
 }
 
+/* Mobile header hiding animation */
+@media (max-width: 768px) {
+    .header {
+        transform: translateY(0);
+        transition: transform 0.3s ease;
+    }
     
+    .header.header-hidden {
+        transform: translateY(-100%);
+    }
+    
+    .keyboard-open .header {
+        position: absolute;
+    }
+    
+    .keyboard-open .quick-actions-customer {
+        display: none !important;
+    }
+}    
 /* End of styles.css */
