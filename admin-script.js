@@ -4458,4 +4458,142 @@ setTimeout(() => {
     }
 }, 1000);
 
+// Security: Show/Hide Quick Actions based on login status
+function showQuickActions() {
+    const quickActions = document.getElementById('quickActions');
+    if (quickActions && currentUser) {
+        quickActions.style.display = 'block';
+    }
+}
+
+function hideQuickActions() {
+    const quickActions = document.getElementById('quickActions');
+    if (quickActions) {
+        quickActions.style.display = 'none';
+    }
+}
+
+// Update the login function
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    showLoadingOverlay();
+    
+    // Simulate authentication delay
+    setTimeout(() => {
+        hideLoadingOverlay();
+        
+        // Simple authentication (in production, use proper authentication)
+        if (username === 'admin' && password === 'admin123') {
+            currentUser = { 
+                username: 'admin', 
+                role: 'administrator',
+                loginTime: new Date().toISOString()
+            };
+            sessionStartTime = new Date();
+            showAdminDashboard();
+            loadDashboardData();
+            enableAutoSave();
+            
+            // Security: Show quick actions only after successful login
+            showQuickActions();
+            
+            showNotification('Login successful', 'success');
+        } else {
+            showNotification('Invalid credentials. Use admin/admin123', 'error');
+        }
+    }, 1000);
+}
+
+// Update the logout function
+function logout() {
+    showConfirmation(
+        'Confirm Logout',
+        'Are you sure you want to logout? Any unsaved changes will be lost.',
+        () => {
+            currentUser = null;
+            sessionStartTime = null;
+            
+            // Security: Hide quick actions on logout
+            hideQuickActions();
+            
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('adminDashboard').style.display = 'none';
+            
+            // Reset forms
+            document.getElementById('loginForm').reset();
+            
+            // Clear auto-save
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+            }
+            
+            showNotification('Logged out successfully', 'success');
+        }
+    );
+}
+
+// Additional security: Hide admin elements when not authenticated
+function hideAdminElements() {
+    const elementsToHide = [
+        'quickActions',
+        'adminDashboard'
+    ];
+    
+    elementsToHide.forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.style.display = 'none';
+        }
+    });
+}
+
+// Security check on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure admin elements are hidden by default
+    hideAdminElements();
+    
+    // Check for any existing session (optional - for remember me functionality)
+    const rememberedSession = localStorage.getItem('admin_session');
+    if (rememberedSession) {
+        try {
+            const session = JSON.parse(rememberedSession);
+            const sessionAge = Date.now() - new Date(session.timestamp).getTime();
+            
+            // Session expires after 24 hours
+            if (sessionAge < 24 * 60 * 60 * 1000) {
+                currentUser = session.user;
+                showAdminDashboard();
+                loadDashboardData();
+                enableAutoSave();
+                showQuickActions();
+                showNotification('Session restored', 'info');
+            } else {
+                localStorage.removeItem('admin_session');
+            }
+        } catch (error) {
+            localStorage.removeItem('admin_session');
+        }
+    }
+});
+
+// Optional: Remember session functionality
+function rememberSession() {
+    const rememberLogin = document.getElementById('rememberLogin')?.checked;
+    if (rememberLogin && currentUser) {
+        const sessionData = {
+            user: currentUser,
+            timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('admin_session', JSON.stringify(sessionData));
+    }
+}
+
+// Update the successful login to optionally remember session
+// Add this to the end of successful login in handleLogin function:
+// rememberSession();
+
 // End of admin-script.js
