@@ -138,4 +138,546 @@ function handleLocationChange(event) {
     
     if (selectedLocation) {
         const locationName = event.target.options[event.target.selectedIndex].text;
-        locationStatus.textContent =
+        locationStatus.textContent = `Showing products available at ${locationName}`;
+        locationStatus.style.color = '#27ae60';
+    } else {
+        locationStatus.textContent = 'Please select a location to view products';
+        locationStatus.style.color = '#666';
+    }
+    
+    displayProducts();
+    updateDeliveryInfo();
+}
+
+// Delivery mode handling
+function handleDeliveryToggle(event) {
+    isDeliveryMode = event.target.checked;
+    updateDeliveryInfo();
+    updateCartSummary();
+}
+
+function updateDeliveryInfo() {
+    const deliveryInfo = document.getElementById('deliveryInfo');
+    const deliveryOption = deliveryInfo.querySelector('.delivery-option');
+    
+    if (isDeliveryMode && selectedLocation) {
+        deliveryOption.innerHTML = `
+            <i class="fas fa-truck"></i>
+            <span>Delivery - ₦${deliveryFee.toLocaleString()}</span>
+        `;
+    } else {
+        deliveryOption.innerHTML = `
+            <i class="fas fa-store"></i>
+            <span>Pickup - FREE</span>
+        `;
+    }
+}
+
+// Product display functions
+function displayProducts() {
+    const productGrid = document.getElementById('productGrid');
+    const filteredProducts = getFilteredProducts();
+    
+    if (!selectedLocation) {
+        productGrid.innerHTML = `
+            <div class="no-location-message">
+                <i class="fas fa-map-marker-alt"></i>
+                <h3>Select a Location</h3>
+                <p>Please choose a store location to view available products and their stock levels.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    if (filteredProducts.length === 0) {
+        productGrid.innerHTML = `
+            <div class="no-products-message">
+                <i class="fas fa-search"></i>
+                <h3>No Products Found</h3>
+                <p>Try adjusting your search or filter criteria.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    productGrid.innerHTML = filteredProducts.map(product => createProductCard(product)).join('');
+}
+
+function createProductCard(product) {
+    const stock = product.stock[selectedLocation] || 0;
+    const stockStatus = getStockStatus(stock);
+    const isInCart = cart.find(item => item.id === product.id);
+    const cartQuantity = isInCart ? isInCart.quantity : 0;
+    
+    return `
+        <div class="product-card" data-product-id="${product.id}">
+            <div class="product-image">
+                <i class="fas ${getProductIcon(product.category)}"></i>
+                <div class="stock-badge ${stockStatus.class}">${stockStatus.text}</div>
+            </div>
+            <div class="product-info">
+                <h3 class="product-name">${product.name}</h3>
+                <p class="product-category">${product.category}</p>
+                <div class="product-price">₦${product.price.toLocaleString()}/${product.unit}</div>
+                <div class="product-stock">Stock: ${stock} ${product.unit}${stock !== 1 ? 's' : ''}</div>
+                
+                ${stock > 0 ? `
+                    <div class="quantity-controls">
+                        <button class="quantity-btn" onclick="updateQuantity(${product.id}, -1)" ${cartQuantity <= 0 ? 'disabled' : ''}>
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" class="quantity-input" value="${cartQuantity}" min="0" max="${stock}" 
+                               onchange="setQuantity(${product.id}, this.value)">
+                        <button class="quantity-btn" onclick="updateQuantity(${product.id}, 1)" ${cartQuantity >= stock ? 'disabled' : ''}>
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <button class="add-to-cart-btn" onclick="addToCart(${product.id})" ${stock <= 0 ? 'disabled' : ''}>
+                        <i class="fas fa-cart-plus"></i>
+                        Add to Cart
+                    </button>
+                ` : `
+                    <button class="add-to-cart-btn" disabled>
+                        <i class="fas fa-times"></i>
+                        Out of Stock
+                    </button>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function getProductIcon(category) {
+    const icons = {
+        groceries: 'fa-apple-alt',
+        dairy: 'fa-glass-whiskey',
+        meat: 'fa-drumstick-bite',
+        household: 'fa-home',
+        electronics: 'fa-mobile-alt',
+        grills: 'fa-fire'
+    };
+    return icons[category] || 'fa-box';
+}
+
+function getStockStatus(stock) {
+    if (stock === 0) {
+        return { class: 'out-of-stock', text: 'Out of Stock' };
+    } else if (stock <= 10) {
+        return { class: 'low-stock', text: 'Low Stock' };
+    } else {
+        return { class: 'in-stock', text: 'In Stock' };
+    }
+}
+
+// Filtering and sorting
+function getFilteredProducts() {
+    let filtered = [...products];
+    
+    // Filter by search term
+    const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
+    if (searchTerm) {
+        filtered = filtered.filter(product => 
+            product.name.toLowerCase().includes(searchTerm) ||
+            product.category.toLowerCase().includes(searchTerm) ||
+            product.description.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    // Filter by category
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    if (categoryFilter) {
+        filtered = filtered.filter(product => product.category === categoryFilter);
+    }
+    
+    // Filter by availability
+    const availabilityFilter = document.getElementById('availabilityFilter').value;
+    if (availabilityFilter && selectedLocation) {
+        filtered = filtered.filter(product => {
+            const stock = product.stock[selectedLocation] || 0;
+            switch (availabilityFilter) {
+                case 'in-stock':
+                    return stock > 10;
+                case 'low-stock':
+                    return stock > 0 && stock <= 10;
+                case 'out-of-stock':
+                    return stock === 0;
+                default:
+                    return true;
+            }
+        });
+    }
+    
+    // Sort products
+    const sortFilter = document.getElementById('sortFilter').value;
+    filtered.sort((a, b) => {
+        switch (sortFilter) {
+            case 'price-low':
+                return a.price - b.price;
+            case 'price-high':
+                return b.price - a.price;
+            case 'stock':
+                const stockA = selectedLocation ? (a.stock[selectedLocation] || 0) : 0;
+                const stockB = selectedLocation ? (b.stock[selectedLocation] || 0) : 0;
+                return stockB - stockA;
+            case 'name':
+            default:
+                return a.name.localeCompare(b.name);
+        }
+    });
+    
+    return filtered;
+}
+
+function applyFilters() {
+    displayProducts();
+}
+
+// Cart functionality
+function addToCart(productId) {
+    if (!selectedLocation) {
+        showNotification('Please select a location first', 'error');
+        return;
+    }
+    
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    const availableStock = product.stock[selectedLocation] || 0;
+    if (availableStock <= 0) {
+        showNotification('Product is out of stock', 'error');
+        return;
+    }
+    
+    const existingItem = cart.find(item => item.id === productId);
+    if (existingItem) {
+        if (existingItem.quantity < availableStock) {
+            existingItem.quantity += 1;
+            showNotification(`Added ${product.name} to cart`, 'success');
+        } else {
+            showNotification('Cannot add more items than available stock', 'warning');
+        }
+    } else {
+        cart.push({
+            id: productId,
+            name: product.name,
+            price: product.price,
+            unit: product.unit,
+            quantity: 1,
+            location: selectedLocation
+        });
+        showNotification(`Added ${product.name} to cart`, 'success');
+    }
+    
+    updateCartDisplay();
+    displayProducts(); // Refresh to update quantity controls
+}
+
+function updateQuantity(productId, change) {
+    const product = products.find(p => p.id === productId);
+    const availableStock = product.stock[selectedLocation] || 0;
+    const existingItem = cart.find(item => item.id === productId);
+    
+    if (existingItem) {
+        const newQuantity = existingItem.quantity + change;
+        if (newQuantity <= 0) {
+            removeFromCart(productId);
+        } else if (newQuantity <= availableStock) {
+            existingItem.quantity = newQuantity;
+            updateCartDisplay();
+            displayProducts();
+        } else {
+            showNotification('Cannot exceed available stock', 'warning');
+        }
+    } else if (change > 0) {
+        addToCart(productId);
+    }
+}
+
+function setQuantity(productId, quantity) {
+    const product = products.find(p => p.id === productId);
+    const availableStock = product.stock[selectedLocation] || 0;
+    const newQuantity = parseInt(quantity) || 0;
+    
+    if (newQuantity <= 0) {
+        removeFromCart(productId);
+    } else if (newQuantity <= availableStock) {
+        const existingItem = cart.find(item => item.id === productId);
+        if (existingItem) {
+            existingItem.quantity = newQuantity;
+        } else {
+            cart.push({
+                id: productId,
+                name: product.name,
+                price: product.price,
+                unit: product.unit,
+                quantity: newQuantity,
+                location: selectedLocation
+            });
+        }
+        updateCartDisplay();
+        displayProducts();
+    } else {
+        showNotification('Cannot exceed available stock', 'warning');
+        displayProducts(); // Reset the input value
+    }
+}
+
+function removeFromCart(productId) {
+    const index = cart.findIndex(item => item.id === productId);
+    if (index > -1) {
+        const item = cart[index];
+        cart.splice(index, 1);
+        showNotification(`Removed ${item.name} from cart`, 'success');
+        updateCartDisplay();
+        displayProducts();
+    }
+}
+
+function updateCartDisplay() {
+    const cartCount = document.getElementById('cartCount');
+    const cartItems = document.getElementById('cartItems');
+    const cartSummary = document.getElementById('cartSummary');
+    
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    cartCount.textContent = totalItems;
+    
+    if (cart.length === 0) {
+        cartItems.innerHTML = `
+            <div class="empty-cart">
+                <i class="fas fa-shopping-cart"></i>
+                <p>Your cart is empty</p>
+                <small>Add items to get started</small>
+            </div>
+        `;
+        cartSummary.style.display = 'none';
+    } else {
+        cartItems.innerHTML = cart.map(item => `
+            <div class="cart-item">
+                <div class="cart-item-image">
+                    <i class="fas ${getProductIcon(products.find(p => p.id === item.id)?.category)}"></i>
+                </div>
+                <div class="cart-item-details">
+                    <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-price">₦${item.price.toLocaleString()}/${item.unit}</div>
+                    <div class="cart-item-controls">
+                        <button class="quantity-btn" onclick="updateQuantity(${item.id}, -1)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" class="quantity-input" value="${item.quantity}" 
+                               onchange="setQuantity(${item.id}, this.value)">
+                        <button class="quantity-btn" onclick="updateQuantity(${item.id}, 1)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="remove-item" onclick="removeFromCart(${item.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        cartSummary.style.display = 'block';
+        updateCartSummary();
+    }
+}
+
+function updateCartSummary() {
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const currentDeliveryFee = isDeliveryMode && subtotal < freeDeliveryThreshold ? deliveryFee : 0;
+    const total = subtotal + currentDeliveryFee;
+    
+    document.getElementById('subtotal').textContent = `₦${subtotal.toLocaleString()}`;
+    document.getElementById('deliveryFee').textContent = `₦${currentDeliveryFee.toLocaleString()}`;
+    document.getElementById('totalAmount').textContent = `₦${total.toLocaleString()}`;
+    
+    // Update delivery fee display
+    const deliveryFeeRow = document.querySelector('.summary-row:nth-child(2) span:last-child');
+    if (isDeliveryMode && subtotal >= freeDeliveryThreshold) {
+        deliveryFeeRow.innerHTML = '<span style="text-decoration: line-through;">₦' + deliveryFee.toLocaleString() + '</span> FREE';
+    }
+}
+
+// Cart sidebar toggle
+function toggleCart() {
+    const cartSidebar = document.getElementById('cartSidebar');
+    const cartOverlay = document.getElementById('cartOverlay');
+    
+    cartSidebar.classList.toggle('open');
+    cartOverlay.classList.toggle('active');
+}
+
+// Checkout functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', handleCheckout);
+    }
+});
+
+function handleCheckout() {
+    if (!selectedLocation) {
+        showNotification('Please select a location first', 'error');
+        return;
+    }
+    
+    if (cart.length === 0) {
+        showNotification('Your cart is empty', 'error');
+        return;
+    }
+    
+    const locationSelect = document.getElementById('locationSelect');
+    const selectedOption = locationSelect.options[locationSelect.selectedIndex];
+    const whatsappNumber = selectedOption.dataset.phone || '2348123456000';
+    const locationName = selectedOption.text;
+    
+    const orderDetails = cart.map(item => 
+        `• ${item.name} - ${item.quantity} ${item.unit}${item.quantity !== 1 ? 's' : ''} @ ₦${item.price.toLocaleString()} each`
+    ).join('\n');
+    
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const currentDeliveryFee = isDeliveryMode && subtotal < freeDeliveryThreshold ? deliveryFee : 0;
+    const total = subtotal + currentDeliveryFee;
+    
+    const deliveryType = isDeliveryMode ? `Delivery (₦${currentDeliveryFee.toLocaleString()})` : 'Pickup (FREE)';
+    
+    const message = `Hello! I'd like to place an order:
+
+${orderDetails}
+
+Subtotal: ₦${subtotal.toLocaleString()}
+${deliveryType}
+Total: ₦${total.toLocaleString()}
+
+Location: ${locationName}
+Order Date: ${new Date().toLocaleDateString()}
+
+Please confirm availability and processing time. Thank you!`;
+    
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    
+    // Clear cart after successful order
+    cart = [];
+    updateCartDisplay();
+    displayProducts();
+    toggleCart();
+    showNotification('Order sent via WhatsApp!', 'success');
+}
+
+// Notification system
+function showNotification(message, type = 'success') {
+    const container = document.getElementById('notificationContainer');
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    container.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Utility functions
+function formatCurrency(amount) {
+    return `₦${amount.toLocaleString()}`;
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Add debounced search
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchFilter');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(applyFilters, 300));
+    }
+});
+
+// Local storage for cart persistence
+function saveCartToStorage() {
+    localStorage.setItem('freshmart_cart', JSON.stringify(cart));
+    localStorage.setItem('freshmart_location', selectedLocation);
+    localStorage.setItem('freshmart_delivery', isDeliveryMode);
+}
+
+function loadCartFromStorage() {
+    const savedCart = localStorage.getItem('freshmart_cart');
+    const savedLocation = localStorage.getItem('freshmart_location');
+    const savedDelivery = localStorage.getItem('freshmart_delivery');
+    
+    if (savedCart) {
+        cart = JSON.parse(savedCart);
+    }
+    
+    if (savedLocation) {
+        selectedLocation = savedLocation;
+        document.getElementById('locationSelect').value = savedLocation;
+        handleLocationChange({ target: { value: savedLocation, options: document.getElementById('locationSelect').options } });
+    }
+    
+    if (savedDelivery) {
+        isDeliveryMode = savedDelivery === 'true';
+        document.getElementById('deliveryToggle').checked = isDeliveryMode;
+        updateDeliveryInfo();
+    }
+}
+
+// Update storage whenever cart changes
+const originalUpdateCartDisplay = updateCartDisplay;
+updateCartDisplay = function() {
+    originalUpdateCartDisplay();
+    saveCartToStorage();
+};
+
+// Load saved data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCartFromStorage();
+});
+
+// Add CSS for no-location and no-products messages
+const additionalStyles = `
+<style>
+.no-location-message,
+.no-products-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.no-location-message i,
+.no-products-message i {
+    font-size: 4rem;
+    color: #bdc3c7;
+    margin-bottom: 1rem;
+}
+
+.no-location-message h3,
+.no-products-message h3 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.no-location-message p,
+.no-products-message p {
+    color: #666;
+    font-size: 1.1rem;
+}
+</style>
+`;
+
+document.head.insertAdjacentHTML('beforeend', additionalStyles);
