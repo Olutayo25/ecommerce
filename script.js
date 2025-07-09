@@ -1082,7 +1082,7 @@ function handleCheckoutSubmission(event) {
     }
     
     // Build order message
-    let orderMessage = ``🛒 *New Order from ${locationInfo.name}*\n\n`;
+    let orderMessage = `🛒 *New Order from ${locationInfo.name}*\n\n`;
     orderMessage = `📋 *Order Details:*\n`;
     
     orderMessage += `*Customer Information:*\n`;
