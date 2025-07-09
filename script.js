@@ -16,42 +16,42 @@ const locationData = {
     'ikeja': {
         name: 'Ikeja Branch',
         address: '123 Ikeja Way, Lagos State',
-        phone: '+2348123456001',
+        phone: '+2347062793809',
         hours: 'Mon-Sun: 8:00 AM - 10:00 PM',
         manager: 'Adebayo Johnson'
     },
     'victoria-island': {
         name: 'Victoria Island Branch',
         address: '456 Victoria Island, Lagos State',
-        phone: '+2348123456002',
+        phone: '+2347062793809',
         hours: 'Mon-Sun: 8:00 AM - 10:00 PM',
         manager: 'Funmi Adebayo'
     },
     'surulere': {
         name: 'Surulere Branch',
         address: '789 Surulere Road, Lagos State',
-        phone: '+2348123456003',
+        phone: '+2347062793809',
         hours: 'Mon-Sun: 8:00 AM - 10:00 PM',
         manager: 'Kemi Okafor'
     },
     'lekki': {
         name: 'Lekki Branch',
         address: '321 Lekki Phase 1, Lagos State',
-        phone: '+2348123456004',
+        phone: '+2347062793809',
         hours: 'Mon-Sun: 8:00 AM - 10:00 PM',
         manager: 'Tunde Bakare'
     },
     'ajah': {
         name: 'Ajah Branch',
         address: '654 Ajah Express, Lagos State',
-        phone: '+2348123456005',
+        phone: '+2347062793809',
         hours: 'Mon-Sun: 8:00 AM - 10:00 PM',
         manager: 'Blessing Okoro'
     },
     'yaba': {
         name: 'Yaba Branch',
         address: '987 Yaba College Road, Lagos State',
-        phone: '+2348123456006',
+        phone: '+2347062793809',
         hours: 'Mon-Sun: 8:00 AM - 10:00 PM',
         manager: 'Chidi Okonkwo'
     }
